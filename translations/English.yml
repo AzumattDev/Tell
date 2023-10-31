@@ -1,0 +1,5 @@
+tell_chat_placeholder: "Write your tell ..."
+tell_chat_message_hint: "/t [text] Tell chat"
+tell_chat_toggle_hint: "/t Toggle tell chat"
+tell_chat_invalid_command: "Command is invalid. Use /t [text] to send a tell."
+tell_chat_player_not_online: "$1 is not online."
