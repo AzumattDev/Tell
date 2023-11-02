@@ -31,17 +31,31 @@ public static class ChatCommands
 
                 if (args.FullLine.Length > 2)
                 {
-                    string trimmedLine = args.FullLine.Substring(2);
-                    int firstSpaceIndex = trimmedLine.IndexOf(' ');
+                    string trimmedLine = args.FullLine.Substring(2).TrimStart();
+                    string targetPlayerName = "";
+                    string message = "";
 
-                    if (firstSpaceIndex == -1 || firstSpaceIndex >= trimmedLine.Length - 1)
+                    // Get a list of all player names.
+                    var playerNames = ZNet.instance.m_players.Select(p => p.m_name).ToList();
+
+                    // Try to match the largest substring starting from the beginning that matches a player name.
+                    foreach (var name in playerNames.OrderByDescending(n => n.Length))
                     {
-                        args.Context.AddString(Localization.instance.Localize("$tell_chat_invalid_command"));
-                        return;
+                        if (trimmedLine.StartsWith(name, StringComparison.OrdinalIgnoreCase))
+                        {
+                            targetPlayerName = name;
+                            SendMessageToGroup.LastPlayerName = name;
+                            int nameLength = name.Length;
+                            message = trimmedLine.Substring(nameLength).TrimStart();
+                            break;
+                        }
                     }
 
-                    string targetPlayerName = trimmedLine.Substring(0, firstSpaceIndex); // Extract player name
-                    string message = trimmedLine.Substring(firstSpaceIndex + 1); // Extract the message after the space
+                    if (string.IsNullOrEmpty(targetPlayerName))
+                    {
+                        args.Context.AddString(Localization.instance.Localize("$tell_chat_invalid_player_name"));
+                        return;
+                    }
 
                     long targetId = ZNet.instance.m_players.FirstOrDefault(p => string.Compare(targetPlayerName, p.m_name, StringComparison.OrdinalIgnoreCase) == 0).m_characterID.UserID;
                     if (targetId == 0)
@@ -104,11 +118,13 @@ public static class ChatCommands
     [HarmonyPatch(typeof(Chat), nameof(Chat.InputText))]
     public class SendMessageToGroup
     {
+        internal static string? LastPlayerName = string.Empty;
+
         private static void Prefix(Chat __instance)
         {
             if (__instance.m_input.text.Length != 0 && tellChatActive && __instance.m_input.text[0] != '/')
             {
-                __instance.m_input.text = "/t " + __instance.m_input.text;
+                __instance.m_input.text = $"/t {LastPlayerName}" + __instance.m_input.text;
             }
         }
     }
